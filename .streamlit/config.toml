@@ -1,0 +1,24 @@
+# .streamlit/config.toml
+
+[theme]
+# Cor primária para elementos interativos (Rosa V4)
+primaryColor="#D33682"
+
+# Cor de fundo principal (Preto V4)
+backgroundColor="#141414"
+
+# Cor de fundo para elementos como a sidebar e containers (Grafite V4)
+secondaryBackgroundColor="#2A2A2A"
+
+# Cor do texto principal (Branco V4)
+textColor="#FFFFFF"
+
+# Define a fonte padrão
+font="sans serif"
+
+[server]
+# Atualiza o app automaticamente ao salvar o script
+runOnSave = true
+
+[app]
+python_version = "3.11"
