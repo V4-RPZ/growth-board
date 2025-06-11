@@ -5,3 +5,4 @@ plotly
 google-cloud-bigquery
 google-auth
 requests
+db-dtypes
