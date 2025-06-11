@@ -313,7 +313,7 @@ def render_persistent_sidebar():
     Renderiza o sidebar interativo e persistente para o aplicativo.
     Lê os dados necessários (como a lista de clientes) do st.session_state.
     """
-    st.sidebar.markdown("<div style='text-align: center;'><img src='https://i.postimg.cc/Pr3Q9dLR/CONE-PADR-O-DE-REDES-SOCIAIS.jpg' width='250'></div>", unsafe_allow_html=True)
+    st.sidebar.markdown("<div style='text-align: center;'><img src='https://i.postimg.cc/dVjMB4jK/LOGO-RPZ-BRANCO.png' width='250'></div>", unsafe_allow_html=True)
     st.sidebar.header("Filtros")
 
     client_map_dict = st.session_state.get('client_map_dict', {})
