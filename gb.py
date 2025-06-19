@@ -365,62 +365,64 @@ st.markdown("""
         font-weight: bold;
     }
 
-    /* --- NOVOS ESTILOS PARA KPI CUSTOMIZADO --- */
-    .custom-kpi-card {
+    /* --- NOVOS ESTILOS PARA KPI CUSTOMIZADO (Performance Geral) --- */
+    .performance-kpi-card {
         background-color: #2A2A2A;
         border-radius: 10px;
-        padding: 15px 20px; /* Mais padding horizontal */
+        padding: 15px 20px;
         border-left: 10px solid; /* Borda lateral base */
-        height: 150px; /* Altura fixa para alinhar os cartões */
+        height: 100%; /* Ocupa altura da coluna p/ alinhar as linhas */
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
     }
-    .kpi-label {
-        font-size: 1rem;
-        color: #A0A0A0; /* Cor cinza para o label */
-        margin-bottom: 8px;
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        margin-bottom: 5px;
     }
-    .kpi-value {
-        font-size: 2.2rem; /* Tamanho do valor principal */
+    .kpi-metric-name {
+        font-size: 1.1em;
+        font-weight: bold;
         color: #FFFFFF;
-        font-weight: 600; /* Semi-bold */
-        line-height: 1.2;
     }
-    .kpi-meta {
-        font-size: 0.9rem; /* Tamanho da meta */
-        color: #E0E0E0; /* Cor branca suave */
-        margin-top: 4px;
+    .kpi-main-value {
+        font-size: 2.2rem;
+        color: #FFFFFF;
+        font-weight: 600;
+        line-height: 1.1;
     }
-    .kpi-delta {
-        font-size: 1rem;
+    .kpi-details-grid {
+        margin-top: 10px;
+        font-size: 0.95em;
+        color: #E0E0E0;
+    }
+    .kpi-percent-achieved {
+        margin-top: 10px;
+        font-size: 1.1em;
         color: #FFFFFF;
         font-weight: bold;
-        margin-top: 8px;
     }
-    /* Cores dinâmicas da borda para o KPI customizado */
-    .metric-card-saudavel { border-left-color: #28a745 !important; }
-    .metric-card-atencao { border-left-color: #ffc107 !important; }
-    .metric-card-ruim { border-left-color: #dc3545 !important; }
-    .metric-card-na { border-left-color: #6c757d !important; }
-    
-    /* --- ÍCONE DE AJUDA ADICIONADO --- */
     .kpi-help-icon {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background-color: #555;
         color: #141414;
         text-align: center;
-        font-size: 12px;
-        line-height: 16px;
+        font-size: 13px;
+        line-height: 18px;
         font-weight: bold;
         cursor: help;
-        margin-left: 8px;
-        position: relative;
-        top: -2px;
+        flex-shrink: 0; /* Impede que o ícone encolha */
     }
+    /* Cores dinâmicas da borda */
+    .metric-card-saudavel { border-left-color: #28a745 !important; }
+    .metric-card-atencao { border-left-color: #ffc107 !important; }
+    .metric-card-ruim { border-left-color: #dc3545 !important; }
+    .metric-card-na { border-left-color: #6c757d !important; }
     /* --- FIM DOS NOVOS ESTILOS --- */
     
     h1 {
@@ -575,7 +577,7 @@ metricas_config = {
     "MQL": {"real_pl_qualificacao": "MQL", "meta_col": "meta_mql_p2", "acumulada": True, "formato": "{:,.0f}", "regra_status": {"ruim_ate": 79.99, "atc_ate": 95.99, "bom_acima": 96, "tipo": "maior_melhor"}},
     "Vendas": {"real_pl_count_faturamento": True, "meta_col": "meta_vendas_p2", "acumulada": True, "formato": "{:,.0f}", "regra_status": {"ruim_ate": 79.99, "atc_ate": 95.99, "bom_acima": 96, "tipo": "maior_melhor"}},
     "Ticket Médio": {"real_calc": "Faturamento/Vendas", "meta_col": "meta_ticket_medio_p2", "acumulada": False, "formato": "R$ {:,.2f}", "regra_status": {"ruim_ate": 74.99, "atc_ate": 89.99, "bom_acima": 90, "tipo": "maior_melhor"}},
-    "Leads > MQL (%)": {"real_calc": "MQL/Leads", "meta_col": "meta_conv_lead_mql_p2", "acumulada": False, "formato": "{:.1f}%", "regra_status": {"bom_entre": (95, 105), "atc_entre_inf": (85, 94.99), "atc_entre_sup": (105.01, 115), "ruim_fora": True, "tipo": "dentro_faixa_percentual"}},
+    "Taxa de MQL": {"real_calc": "MQL/Leads", "meta_col": "meta_conv_lead_mql_p2", "acumulada": False, "formato": "{:.1f}%", "regra_status": {"bom_entre": (95, 105), "atc_entre_inf": (85, 94.99), "atc_entre_sup": (105.01, 115), "ruim_fora": True, "tipo": "dentro_faixa_percentual"}},
     "CPL": {"real_calc": "Investimento/Leads", "meta_col": "meta_cpl_p2", "acumulada": False, "formato": "R$ {:,.2f}", "regra_status": {"ruim_fora": True, "tipo": "custo_menor_melhor"}},
     "CPMQL": {"real_calc": "Investimento/MQL", "meta_col": "meta_cpmql_p2", "acumulada": False, "formato": "R$ {:,.2f}", "regra_status": {"ruim_fora": True, "tipo": "custo_menor_melhor"}},
     "ROAS": {"real_calc": "Faturamento/Investimento", "meta_col": "meta_roas_p2", "acumulada": False, "formato": "{:,.2f}x", "regra_status": {"tipo": "valor_absoluto", "ruim_max": 4, "saudavel_max": 10}},
@@ -628,7 +630,7 @@ if not df_p2_metas_original.empty and 'project_id_p2' in df_p2_metas_original.co
             fee_valor = meta_mes_especifico_df['fee_p2'].iloc[0] if 'fee_p2' in meta_mes_especifico_df.columns else 0.0
 
 realizados_calculados["Ticket Médio"] = (realizados_calculados["Faturamento"] / realizados_calculados["Vendas"]) if realizados_calculados["Vendas"] > 0 else 0.0
-realizados_calculados["Leads > MQL (%)"] = (realizados_calculados["MQL"] / realizados_calculados["Leads"] * 100) if realizados_calculados["Leads"] > 0 else 0.0
+realizados_calculados["Taxa de MQL"] = (realizados_calculados["MQL"] / realizados_calculados["Leads"] * 100) if realizados_calculados["Leads"] > 0 else 0.0
 realizados_calculados["CPL"] = (realizados_calculados["Investimento"] / realizados_calculados["Leads"]) if realizados_calculados["Leads"] > 0 else 0.0
 realizados_calculados["CPMQL"] = (realizados_calculados["Investimento"] / realizados_calculados["MQL"]) if realizados_calculados["MQL"] > 0 else 0.0
 faturamento_real = realizados_calculados["Faturamento"]
@@ -680,7 +682,7 @@ for metrica_nome, config in metricas_config.items():
         elif real > 0 and meta == 0: percent_atingido = float('inf')
         elif real == 0 and meta == 0: percent_atingido = 100
 
-    if metrica_nome == "Leads > MQL (%)":
+    if metrica_nome == "Taxa de MQL":
         meta_em_percentual = meta * 100
         real_percentual = real
         if meta_em_percentual > 0: percent_atingido = (real_percentual / meta_em_percentual) * 100
@@ -704,7 +706,7 @@ payload_data_checkin = {
     "kpis_google_ads": {},  # Será populado abaixo
     "kpis_meta_ads": {}     # Será populado abaixo
 }
-metricas_para_exibir_checkin = ["Faturamento", "Investimento", "Leads", "MQL", "Vendas", "Ticket Médio", "CPL", "CPMQL", "Leads > MQL (%)", "ROAS", "ROI", "Growth Rate"]
+metricas_para_exibir_checkin = ["Faturamento", "Investimento", "Leads", "MQL", "Vendas", "Ticket Médio", "CPL", "CPMQL", "Taxa de MQL", "ROAS", "ROI", "Growth Rate"]
 for metrica in metricas_para_exibir_checkin:
     if metrica in df_tabela_performance.columns:
         realizado, meta, diferenca, atingido_perc, status = df_tabela_performance.loc[:, metrica]
@@ -918,9 +920,6 @@ if st.session_state.get("show_success_dialog", False):
 
 st.markdown(HR_SEPARATOR_STYLE, unsafe_allow_html=True)
 
-st.markdown("<h2 style='text-align: center;'>Performance Geral do Projeto</h2>", unsafe_allow_html=True)
-
-
 def get_status_by_value(metric_name, real_value, regra_status):
     if pd.isna(real_value) or real_value == float('inf') or real_value == float('-inf'):
         return "N/A", ""
@@ -981,104 +980,89 @@ for metrica_col in df_tabela_performance.columns:
 
     df_tabela_performance.loc["Status", metrica_col] = status_txt
 
-# --- SEÇÃO DE KPIs ATUALIZADA ---
-kpi_metrics = ["Faturamento", "ROAS", "ROI", "Growth Rate"]
-cols = st.columns(len(kpi_metrics))
+# --- SEÇÃO DE KPIs ATUALIZADA (TODOS COMO CARDS) ---
+st.markdown("<h2 style='text-align: center;'>Performance Geral do Projeto</h2>", unsafe_allow_html=True)
 
-for i, metrica in enumerate(kpi_metrics):
-    with cols[i]:
-        realizado = df_tabela_performance.loc["Realizado", metrica]
-        meta = df_tabela_performance.loc["Meta", metrica]
-        percent_atingido = df_tabela_performance.loc["% Atingido", metrica]
-        status = df_tabela_performance.loc["Status", metrica]
+kpi_order = [
+    "Investimento", "Faturamento", "ROAS", "ROI",
+    "Vendas", "Ticket Médio", "Leads", "CPL",
+    "Taxa de MQL", "Growth Rate", "MQL", "CPMQL"
+]
 
-        status_class = status.lower().replace('á', 'a').replace('ç', 'c')
+# Cria 3 linhas de 4 colunas
+for i in range(0, len(kpi_order), 4):
+    cols = st.columns(4)
+    row_metrics = kpi_order[i:i+4]
 
-        formato_valor = metricas_config[metrica]['formato']
-        valor_formatado = format_brazilian(realizado, formato_valor)
-        meta_formatada = format_brazilian(meta, formato_valor)
+    for j, metrica in enumerate(row_metrics):
+        with cols[j]:
+            if metrica not in df_tabela_performance.columns:
+                st.markdown(f"""
+                <div class="performance-kpi-card metric-card-na">
+                    <div class="kpi-header">
+                        <span class="kpi-metric-name">{metrica}</span>
+                    </div>
+                    <div>Dados Indisponíveis</div>
+                </div>
+                """, unsafe_allow_html=True)
+                continue
 
-        delta_formatado = f"{format_brazilian(percent_atingido, '{:,.1f}')}% Atingido"
-        if pd.isna(percent_atingido) or percent_atingido == float('inf') or percent_atingido == float('-inf'):
-            delta_formatado = "N/A"
+            realizado = df_tabela_performance.loc["Realizado", metrica]
+            meta = df_tabela_performance.loc["Meta", metrica]
+            diferenca = df_tabela_performance.loc["Diferença", metrica]
+            percent_atingido = df_tabela_performance.loc["% Atingido", metrica]
+            status = df_tabela_performance.loc["Status", metrica]
 
-        # --- LÓGICA ADICIONADA PARA O ÍCONE DE AJUDA ---
-        help_icon_html = ""  # Começa vazio por padrão
-        if metrica == "ROI":
-            lt_formatado = format_brazilian(lt_valor, '{:,.2f}')
-            help_text = f"ROI considerando que o LT seja {lt_formatado}"
-            # Cria o HTML do ícone usando o 'title' para o tooltip
-            help_icon_html = f'<span class="kpi-help-icon" title="{help_text}">?</span>'
+            status_class = status.lower().replace('á', 'a').replace('ç', 'c')
 
-        # Constrói o HTML do cartão customizado, incluindo a variável do ícone
-        kpi_html = f"""
-        <div class="custom-kpi-card metric-card-{status_class if status_class else 'na'}">
-            <div class="kpi-label">{metrica}{help_icon_html}</div>
-            <div class="kpi-value">{valor_formatado}</div>
-            <div class="kpi-meta">Meta: {meta_formatada}</div>
-            <div class="kpi-delta">{delta_formatado}</div>
-        </div>
-        """
-        st.markdown(kpi_html, unsafe_allow_html=True)
+            # Formatação
+            formato_valor = metricas_config[metrica]['formato']
+            realizado_fmt = format_brazilian(realizado, formato_valor)
 
-# Linha para criar o espaço antes da tabela
+            # Para Meta e Diferença, o formato pode ser o mesmo do valor principal
+            if metrica == "Taxa de MQL":
+                meta_fmt = format_brazilian(meta * 100, "{:,.1f}%")
+                # A diferença de percentuais é em pontos percentuais (p.p.)
+                diferenca_fmt = f"{format_brazilian(diferenca, '{:,.1f}')} p.p."
+            else:
+                meta_fmt = format_brazilian(meta, formato_valor)
+                diferenca_fmt = format_brazilian(diferenca, formato_valor)
+
+            atingido_fmt = f"{format_brazilian(percent_atingido, '{:,.1f}')}%"
+            if pd.isna(percent_atingido) or percent_atingido == float('inf') or percent_atingido == float('-inf'):
+                atingido_fmt = "N/A"
+
+            # Lógica do ícone de ajuda
+            if metrica == "ROI":
+                lt_formatado = format_brazilian(lt_valor, '{:,.2f}')
+                help_text = f"ROI considerando que o LT seja {lt_formatado}"
+            else:
+                help_text = "descrição"
+
+            # Construção do HTML do Card
+            kpi_html = f"""
+            <div class="performance-kpi-card metric-card-{status_class if status_class else 'na'}">
+                <div>
+                    <div class="kpi-header">
+                        <span class="kpi-metric-name">{metrica}</span>
+                        <span class="kpi-help-icon" title="{help_text}">?</span>
+                    </div>
+                    <div class="kpi-main-value">{realizado_fmt}</div>
+                </div>
+                <div>
+                    <div class="kpi-details-grid">
+                        <span>Meta: {meta_fmt}</span><br>
+                        <span>Diferença: {diferenca_fmt}</span>
+                    </div>
+                    <div class="kpi-percent-achieved">{atingido_fmt}</div>
+                </div>
+            </div>
+            """
+            st.markdown(kpi_html, unsafe_allow_html=True)
+
+# Adiciona um espaço para separar da próxima seção
 st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
 
-df_tabela_para_exibir = df_tabela_performance.drop(columns=kpi_metrics).T.copy()
-df_tabela_para_exibir.index.name = None
-
-for metrica_nome_format, config_format in metricas_config.items():
-    if metrica_nome_format not in df_tabela_para_exibir.index:
-        continue
-    formato_str = config_format.get("formato", "{:,.2f}")
-    for linha_format in ["Realizado", "Meta", "Diferença"]:
-        if metrica_nome_format in df_tabela_para_exibir.index and linha_format in df_tabela_para_exibir.columns:
-            valor = df_tabela_para_exibir.loc[metrica_nome_format, linha_format]
-            if pd.notna(valor) and valor != float('inf') and valor != float('-inf'):
-                try:
-                    if metrica_nome_format == "Leads > MQL (%)" and linha_format == "Realizado":
-                         df_tabela_para_exibir.loc[metrica_nome_format, linha_format] = f"{format_brazilian(valor, '{:,.1f}')}%"
-                    elif metrica_nome_format == "Leads > MQL (%)" and linha_format == "Meta":
-                         df_tabela_para_exibir.loc[metrica_nome_format, linha_format] = f"{format_brazilian(valor * 100, '{:,.1f}')}%"
-                    else:
-                        df_tabela_para_exibir.loc[metrica_nome_format, linha_format] = format_brazilian(valor, formato_str)
-                except (ValueError, TypeError):
-                    df_tabela_para_exibir.loc[metrica_nome_format, linha_format] = str(valor)
-
-    if metrica_nome_format in df_tabela_para_exibir.index and "% Atingido" in df_tabela_para_exibir.columns:
-        valor_perc = df_tabela_para_exibir.loc[metrica_nome_format, "% Atingido"]
-        if pd.notna(valor_perc) and valor_perc != float('inf') and valor_perc != float('-inf'):
-            df_tabela_para_exibir.loc[metrica_nome_format, "% Atingido"] = f"{format_brazilian(valor_perc, '{:,.1f}')}%"
-        elif pd.notna(valor_perc) and (valor_perc == float('inf') or valor_perc == float('-inf')):
-            df_tabela_para_exibir.loc[metrica_nome_format, "% Atingido"] = "∞" if valor_perc == float('inf') else "-"
-
-def apply_styler_performance(df_styled_input):
-    def get_cell_color_style(row_series_styled):
-        metric_name_styled = row_series_styled.name
-        styles = [''] * len(row_series_styled)
-        if metric_name_styled in df_tabela_performance.columns:
-            regra_status_for_style = metricas_config[metric_name_styled].get("regra_status", {})
-            tipo_regra_for_style = regra_status_for_style.get("tipo")
-            cor_css_for_style = ""
-            if tipo_regra_for_style == 'valor_absoluto':
-                real_value_for_style = df_tabela_performance.loc["Realizado", metric_name_styled]
-                _, cor_css_for_style = get_status_by_value(metric_name_styled, real_value_for_style, regra_status_for_style)
-            else:
-                percent_value_for_style = df_tabela_performance.loc["% Atingido", metric_name_styled]
-                _, cor_css_for_style = get_status_by_percent(percent_value_for_style, regra_status_for_style)
-            if cor_css_for_style:
-                try:
-                    status_col_idx = row_series_styled.index.get_loc("Status")
-                    styles[status_col_idx] = cor_css_for_style
-                except KeyError:
-                    pass
-        return styles
-    styled_obj = df_styled_input.style.apply(get_cell_color_style, axis=1)
-    return styled_obj
-
-styler_performance_geral = apply_styler_performance(df_tabela_para_exibir)
-styler_performance_geral.set_table_styles(COMMON_TABLE_HEADER_STYLES, overwrite=False)
-st.write(styler_performance_geral.to_html(), unsafe_allow_html=True)
 
 st.markdown(HR_SEPARATOR_STYLE, unsafe_allow_html=True)
 
@@ -1227,7 +1211,8 @@ if not df_pl_filtrado_intervalo.empty and "utm_source_pl" in df_pl_filtrado_inte
             zeroline=False,
             showticklabels=True,
             dtick=5,
-            ticksuffix='%'
+            ticksuffix='%',
+            range=[0, 100] # AJUSTE: Eixo fixado de 0 a 100
         ),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         legend=dict(orientation="h", yanchor="bottom", y=-0.7, xanchor="center", x=0.5),
@@ -1482,7 +1467,7 @@ if conferidor_mode:
 
         formato_str = metrica_config.get("formato", "{:,.2f}")
 
-        if metrica_config.get('nome') == "Leads > MQL (%)":
+        if metrica_config.get('nome') == "Taxa de MQL":
              if tipo_valor == 'meta':
                  valor_a_formatar = valor * 100
              else:
@@ -1543,3 +1528,4 @@ if conferidor_mode:
     display_conferidor_table(df_gads_bq, "Google Ads (BQ)", 'project_id_gads')
     display_conferidor_table(df_fb_ads_bq, "Facebook Ads (BQ)", 'project_id_fb')
     st.markdown("---")
+}
