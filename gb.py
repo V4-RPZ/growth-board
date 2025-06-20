@@ -12,6 +12,7 @@ import requests
 import json
 
 # --- CONFIGURAÇÕES GERAIS CORRIGIDAS (Lendo do st.secrets) ---
+# Todas as variáveis agora são lidas diretamente do st.secrets.
 BQ_PROJECT_ID_GCP = st.secrets["BQ_PROJECT_ID_GCP"]
 BQ_DATASET_ID = st.secrets["BQ_DATASET_ID"]
 BQ_TABLE_GKW = st.secrets["BQ_TABLE_GKW"]
@@ -164,11 +165,14 @@ def fetch_data_from_bigquery(project_gcp_id, dataset_id, table_id,
                              column_mapping, date_column_in_bq,
                              start_date_dt_func, end_date_dt_func,
                              project_id_api_column_in_bq=None, project_id_api_value_filter=None):
+    # CORREÇÃO: Removido o parâmetro 'credentials_path' e a checagem de 'os.path.exists'
+    # A função agora depende exclusivamente do st.secrets.
     if not all([project_gcp_id, dataset_id, table_id, column_mapping]):
         st.warning(f"Configurações do BigQuery incompletas para buscar dados da tabela {table_id}.")
         return pd.DataFrame()
 
     try:
+        # Carrega as credenciais a partir do st.secrets, que é o padrão do Streamlit Cloud
         credentials_info = st.secrets["gcp_service_account"]
         credentials = service_account.Credentials.from_service_account_info(credentials_info)
         client = bigquery.Client(credentials=credentials, project=project_gcp_id)
@@ -203,6 +207,7 @@ def fetch_data_from_bigquery(project_gcp_id, dataset_id, table_id,
         valid_rename_map = {k: v for k, v in column_mapping.items() if k in df.columns}
         df_renamed = df.rename(columns=valid_rename_map)
 
+        # --- Conversões de tipo de dados ---
         date_cols = ['data_criacao', 'data_api_gkw', 'data_api_gads', 'data_api_fbads']
         for col in date_cols:
             if col in df_renamed.columns:
@@ -270,6 +275,7 @@ def carregar_planilha_gs(url_planilha, colunas_map, nome_coluna_data_renomeada, 
         df_processado['ano_mes'] = df_processado[nome_coluna_data_renomeada].dt.to_period('M')
 
         if nome_planilha_debug == "Planilha 2 (Metas)":
+            # Colunas tratadas como números (Reais, contagens, etc.)
             cols_valor_ou_contagem_p2 = [
                 "meta_faturamento_p2", "meta_investimento_p2", "meta_leads_p2",
                 "meta_mql_p2", "meta_vendas_p2", "meta_ticket_medio_p2",
@@ -277,6 +283,7 @@ def carregar_planilha_gs(url_planilha, colunas_map, nome_coluna_data_renomeada, 
                 "lt_p2", "fee_p2", "meta_growth_rate_p2",
                 "meta_roi_p2", "meta_roas_p2"
             ]
+            # Colunas tratadas como percentuais
             cols_percentual_meta_p2 = ["meta_conv_lead_mql_p2", "mc_p2"]
 
             for col_meta in df_processado.columns:
@@ -304,6 +311,7 @@ def carregar_planilha_gs(url_planilha, colunas_map, nome_coluna_data_renomeada, 
 def render_persistent_sidebar():
     """
     Renderiza o sidebar interativo e persistente para o aplicativo.
+    Lê os dados necessários (como a lista de clientes) do st.session_state.
     """
     st.sidebar.markdown("<div style='text-align: center;'><img src='https://i.postimg.cc/dVjMB4jK/LOGO-RPZ-BRANCO.png' width='250'></div>", unsafe_allow_html=True)
     st.sidebar.header("Filtros")
@@ -344,7 +352,15 @@ st.markdown("""
         background-color: #141414;
     }
 
-    /* Estilo para os cartões de métrica (st.metric) do GAds/MetaAds */
+    /* --- AJUSTE GLOBAL PARA RESPONSIVIDADE --- */
+    /* Permite que as colunas do Streamlit se empilhem em telas menores */
+    @media (max-width: 768px) {
+        div[data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap;
+        }
+    }
+
+    /* Estilo para os cartões de métrica (st.metric) das seções GAds/Meta */
     [data-testid="stMetric"] {
         background-color: #2A2A2A;
         border: 1px solid #2A2A2A;
@@ -357,24 +373,37 @@ st.markdown("""
         font-weight: bold;
     }
 
-    /* --- AJUSTE: CONTAINER RESPONSIVO PARA OS CARDS DE PERFORMANCE --- */
+    /* --- Grade de KPIs Responsiva para "Performance Geral" --- */
     .kpi-grid-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem; /* Aplica espaçamento horizontal E vertical */
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); /* Padrão: 4 colunas */
+        gap: 16px; /* Espaçamento vertical e horizontal */
     }
 
-    /* --- NOVOS ESTILOS PARA KPI CUSTOMIZADO (Performance Geral) --- */
+    /* Vista para Tablet */
+    @media (max-width: 1200px) {
+        .kpi-grid-container {
+            grid-template-columns: repeat(2, 1fr); /* 2 colunas */
+        }
+    }
+
+    /* Vista para Celular */
+    @media (max-width: 768px) {
+        .kpi-grid-container {
+            grid-template-columns: 1fr; /* 1 coluna */
+        }
+    }
+    
+    /* --- Estilos dos Cards de KPI --- */
     .performance-kpi-card {
         background-color: #2A2A2A;
         border-radius: 10px;
         padding: 15px 20px;
         border-left: 10px solid; /* Borda lateral base */
+        height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        flex: 1 1 280px; /* Faz o card ser flexível e responsivo */
-        min-height: 170px; /* Altura mínima para consistência */
     }
     .kpi-header {
         display: flex;
@@ -398,7 +427,6 @@ st.markdown("""
         margin-top: 10px;
         font-size: 0.95em;
         color: #E0E0E0;
-        line-height: 1.4;
     }
     .kpi-percent-achieved {
         margin-top: 10px;
@@ -417,15 +445,15 @@ st.markdown("""
         line-height: 18px;
         font-weight: bold;
         cursor: help;
-        flex-shrink: 0; /* Impede que o ícone encolha */
+        flex-shrink: 0;
     }
     /* Cores dinâmicas da borda */
     .metric-card-saudavel { border-left-color: #28a745 !important; }
     .metric-card-atencao { border-left-color: #ffc107 !important; }
     .metric-card-ruim { border-left-color: #dc3545 !important; }
     .metric-card-na { border-left-color: #6c757d !important; }
-    /* --- FIM DOS NOVOS ESTILOS --- */
     
+    /* Estilos Gerais */
     h1 {
         color: #FFFFFF;
         text-align: center;
@@ -443,15 +471,18 @@ st.markdown("""
         background-color: #141414 !important;
         border-collapse: collapse;
     }
-    th, td {
-        padding: 8px;
-        border: 1px solid #444444 !important;
-        text-align: left !important;
-    }
     th {
         background-color: #333333 !important;
         color: white !important;
         font-weight: bold !important;
+        text-align: left !important;
+        padding: 8px;
+        border: 1px solid #444444 !important;
+    }
+    td {
+        padding: 8px;
+        border: 1px solid #444444 !important;
+        text-align: left !important;
     }
     .stButton>button {
         background-color: #D33682;
@@ -486,6 +517,7 @@ st.markdown("""
 initial_load_start = date.today() - timedelta(days=730)
 initial_load_end = date.today()
 
+# CORREÇÃO: Removido o argumento 'credentials_path' daqui.
 df_pl_original = fetch_data_from_bigquery(
     project_gcp_id=BQ_PROJECT_ID_GCP,
     dataset_id=BQ_DATASET_ID,
@@ -531,6 +563,7 @@ if not selected_project_id:
 
 
 # --- CARREGAMENTO DE DADOS DO BIGQUERY (COM BASE NOS FILTROS) ---
+# CORREÇÃO: Removido o argumento 'SERVICE_ACCOUNT_JSON_PATH' de todas as chamadas.
 df_google_kw_bq = fetch_data_from_bigquery(
     BQ_PROJECT_ID_GCP, BQ_DATASET_ID, BQ_TABLE_GKW,
     column_mapping=COLUNAS_BQ_KEYWORDS_MAP, date_column_in_bq='date',
@@ -580,10 +613,16 @@ metricas_config = {
     "ROI": {"real_calc": "(Faturamento * LT * MC) / Investimento", "meta_col": "meta_roi_p2", "acumulada": False, "formato": "{:,.2f}x", "regra_status": {"tipo": "valor_absoluto", "ruim_max": 1, "saudavel_max": 3}},
     "Growth Rate": {"real_calc": "((Faturamento * MC) - Investimento) / Fee", "meta_col": "meta_growth_rate_p2", "acumulada": False, "formato": "{:,.2f}", "regra_status": {"tipo": "valor_absoluto", "ruim_max": 1, "atencao_max": 2}}
 }
+# Cria o DataFrame de performance completo com todas as métricas
 linhas_tabela_performance = ["Realizado", "Meta", "Diferença", "% Atingido", "Status"]
 
+# --- AJUSTE APLICADO ---
+# Inicializa o DataFrame com tipo 'object' para permitir tipos de dados mistos (números e texto)
+# e evitar `FutureWarning`.
 df_tabela_performance = pd.DataFrame(index=linhas_tabela_performance, columns=metricas_config.keys()).astype(object)
+# Preenche as linhas numéricas com 0.0
 df_tabela_performance.loc[["Realizado", "Meta", "Diferença", "% Atingido"]] = 0.0
+# Preenche a linha de status com string vazia
 df_tabela_performance.loc["Status"] = ""
 
 
@@ -614,6 +653,7 @@ if not df_p2_metas_original.empty and 'project_id_p2' in df_p2_metas_original.co
         ultimo_mes_filtro = pd.Period(data_selecionada_fim, freq='M')
         meta_mes_especifico_df = metas_projeto_df[metas_projeto_df['ano_mes'] == ultimo_mes_filtro]
         if not meta_mes_especifico_df.empty:
+            # Garante que pegamos o valor da primeira linha correspondente ao mês
             lt_valor = meta_mes_especifico_df['lt_p2'].iloc[0] if 'lt_p2' in meta_mes_especifico_df.columns else 0.0
             mc_valor = meta_mes_especifico_df['mc_p2'].iloc[0] if 'mc_p2' in meta_mes_especifico_df.columns else 0.0
             fee_valor = meta_mes_especifico_df['fee_p2'].iloc[0] if 'fee_p2' in meta_mes_especifico_df.columns else 0.0
@@ -683,13 +723,17 @@ for metrica_nome, config in metricas_config.items():
 # --- ESTRUTURA PRINCIPAL DO DASHBOARD ---
 
 # --- LÓGICA DE CHECK-IN (BOTÕES E PAYLOAD) ---
+# CORREÇÃO: O payload é preparado aqui, incluindo os KPIs de GAds e MAds,
+# antes que os botões do webhook sejam renderizados na tela.
+
+# 1. Inicializa o payload com métricas gerais
 payload_data_checkin = {
     "cliente": selected_client,
     "periodo_inicio": data_selecionada_inicio.isoformat(),
     "periodo_fim": data_selecionada_fim.isoformat(),
     "metricas_gerais": {},
-    "kpis_google_ads": {},
-    "kpis_meta_ads": {}
+    "kpis_google_ads": {},  # Será populado abaixo
+    "kpis_meta_ads": {}     # Será populado abaixo
 }
 metricas_para_exibir_checkin = ["Faturamento", "Investimento", "Leads", "MQL", "Vendas", "Ticket Médio", "CPL", "CPMQL", "Taxa de MQL", "ROAS", "ROI", "Growth Rate"]
 for metrica in metricas_para_exibir_checkin:
@@ -704,6 +748,7 @@ for metrica in metricas_para_exibir_checkin:
             "status": status
         }
 
+# 2. Processa dados de Leads para junção com Google e Meta
 pl_cols_ok_for_google = not df_pl_filtrado_intervalo.empty and all(c in df_pl_filtrado_intervalo.columns for c in ['utm_term_pl', 'utm_campaign_pl', 'qualificacao_pl', 'real_faturamento_venda_pl'])
 agg_pl = {'Leads': pd.NamedAgg(column='project_id_pl', aggfunc='count'),
           'MQL': pd.NamedAgg(column='qualificacao_pl', aggfunc=lambda x: (x == 'MQL').sum()),
@@ -716,12 +761,17 @@ pl_agg_for_fb = pd.DataFrame()
 
 if pl_cols_ok_for_google:
     df_pl_google_base = df_pl_filtrado_intervalo.copy()
+
+    # CORREÇÃO: Agrupa pelo utm_term original para junção sensível a acentos
     df_pl_processed_kw = df_pl_google_base.groupby('utm_term_pl').agg(**agg_pl).reset_index()
+
     if 'utm_campaign_pl' in df_pl_google_base.columns:
         df_pl_processed_gads = df_pl_google_base.groupby('utm_campaign_pl').agg(**agg_pl).reset_index()
+
     pl_agg_for_fb = df_pl_filtrado_intervalo.groupby('utm_term_pl').agg(**agg_pl).reset_index()
 
 
+# 3. Calcula dados e KPIs do Google Ads para o payload
 tabela_gads = pd.DataFrame()
 if not df_gads_bq.empty and 'campaign_id_gads' in df_gads_bq.columns:
     df_gads_agg = df_gads_bq.groupby(['campaign_name_gads', 'campaign_id_gads']).agg(
@@ -733,6 +783,7 @@ if not df_gads_bq.empty and 'campaign_id_gads' in df_gads_bq.columns:
     else:
         tabela_gads = df_gads_agg.copy()
 
+    # --- AJUSTE APLICADO (Anti-FutureWarning: fillna) ---
     numeric_cols_to_fill = ['Leads', 'MQL', 'Vendas', 'Valor']
     for col in numeric_cols_to_fill:
         if col not in tabela_gads.columns:
@@ -744,9 +795,11 @@ if not df_gads_bq.empty and 'campaign_id_gads' in df_gads_bq.columns:
     tabela_gads['% MQL'] = (tabela_gads['MQL'] / tabela_gads['Leads'] * 100).fillna(0)
     tabela_gads['CPL'] = (tabela_gads['Investido'] / tabela_gads['Leads']).fillna(0)
     tabela_gads['CPMQL'] = (tabela_gads['Investido'] / tabela_gads['MQL']).fillna(0)
+    # --- AJUSTE APLICADO (Anti-FutureWarning: replace) ---
     tabela_gads.replace([np.inf, -np.inf], 0.0, inplace=True)
     tabela_gads.rename(columns={'campaign_name_gads': 'Campanha'}, inplace=True)
 
+    # Popula o payload do webhook com os KPIs do Google Ads
     if not tabela_gads.empty:
         investido_gads_total = tabela_gads['Investido'].sum()
         leads_gads_total = tabela_gads['Leads'].sum()
@@ -764,6 +817,7 @@ if not df_gads_bq.empty and 'campaign_id_gads' in df_gads_bq.columns:
             'total_impressoes': total_impressoes_gads, 'total_cliques': total_cliques_gads
         }
 
+# 4. Calcula dados e KPIs do Meta Ads para o payload
 df_fb_creatives_final = pd.DataFrame()
 if not df_fb_ads_bq.empty:
     fb_ads_grouped_period = df_fb_ads_bq.groupby(['project_id_fb', 'ad_id_fb', 'Criativo_fb_ad_name', 'adset_name_fb', 'campaign_name_fb'], as_index=False).agg(
@@ -774,6 +828,7 @@ if not df_fb_ads_bq.empty:
         merged_fb_tahap_2 = pd.merge(merged_fb_tahap_2, pl_agg_for_fb, left_on='ad_id_fb', right_on='utm_term_pl', how='left')
         merged_fb_tahap_2.drop(columns=['utm_term_pl'], inplace=True, errors='ignore')
 
+    # --- AJUSTE APLICADO (Anti-FutureWarning: fillna) ---
     numeric_cols_to_fill_fb = ['Leads', 'MQL', 'Vendas', 'Valor']
     for col in numeric_cols_to_fill_fb:
         if col not in merged_fb_tahap_2.columns:
@@ -787,6 +842,7 @@ if not df_fb_ads_bq.empty:
     df_fb_creatives_final['% MQL'] = (df_fb_creatives_final['MQL'] / df_fb_creatives_final['Leads'] * 100).fillna(0)
     df_fb_creatives_final['CPL'] = (df_fb_creatives_final['Investido'] / df_fb_creatives_final['Leads']).fillna(0)
     df_fb_creatives_final['CPMQL'] = (df_fb_creatives_final['Investido'] / df_fb_creatives_final['MQL']).fillna(0)
+    # --- AJUSTE APLICADO (Anti-FutureWarning: replace) ---
     df_fb_creatives_final.replace([np.inf, -np.inf], 0.0, inplace=True)
 
     if not df_fb_creatives_final.empty:
@@ -816,11 +872,13 @@ def trigger_webhook(webhook_url, payload, button_name, success_title):
         st.error(f"A URL do Webhook para '{button_name}' não foi configurada nos segredos do Streamlit.")
         return
 
+    # Limpa e arredonda o payload antes de enviar
     cleaned_payload = clean_and_round_payload(payload)
 
     with st.spinner(f"Criando sua solicitação de '{button_name}'. Aguarde..."):
         try:
             headers = {'Content-Type': 'application/json'}
+            # Usa o payload limpo e garante que NaNs não sejam permitidos (embora já tenham sido tratados)
             response = requests.post(webhook_url, data=json.dumps(cleaned_payload, allow_nan=False), headers=headers, timeout=180)
 
             if response.status_code == 200:
@@ -893,48 +951,49 @@ st.markdown(HR_SEPARATOR_STYLE, unsafe_allow_html=True)
 
 def get_status_by_value(metric_name, real_value, regra_status):
     if pd.isna(real_value) or real_value == float('inf') or real_value == float('-inf'):
-        return "N/A"
+        return "N/A", ""
 
     if metric_name == "ROI":
-        if real_value < regra_status.get("ruim_max", 1): return "Ruim"
-        elif real_value <= regra_status.get("saudavel_max", 3): return "Saudável"
-        else: return "Atenção"
+        if real_value < regra_status.get("ruim_max", 1): return "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
+        elif real_value <= regra_status.get("saudavel_max", 3): return "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+        else: return "Atenção", f'background-color: {CORES_STATUS_TEXTO["Atenção"]}'
     elif metric_name == "ROAS":
-        if real_value < regra_status.get("ruim_max", 4): return "Ruim"
-        elif real_value <= regra_status.get("saudavel_max", 10): return "Saudável"
-        else: return "Atenção"
+        if real_value < regra_status.get("ruim_max", 4): return "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
+        elif real_value <= regra_status.get("saudavel_max", 10): return "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+        else: return "Atenção", f'background-color: {CORES_STATUS_TEXTO["Atenção"]}'
     elif metric_name == "Growth Rate":
-        if real_value < regra_status.get("ruim_max", 1): return "Ruim"
-        elif real_value <= regra_status.get("atencao_max", 2): return "Atenção"
-        else: return "Saudável"
-    return "N/A"
+        if real_value < regra_status.get("ruim_max", 1): return "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
+        elif real_value <= regra_status.get("atencao_max", 2): return "Atenção", f'background-color: {CORES_STATUS_TEXTO["Atenção"]}'
+        else: return "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+    return "N/A", ""
 
 def get_status_by_percent(percent_value, regra_status_config):
     status_texto = "N/A"
+    cor_de_fundo_css = ""
     tipo = regra_status_config.get("tipo")
 
     if pd.isna(percent_value) or tipo is None or percent_value == float('inf') or percent_value == float('-inf'):
-        if percent_value == float('inf') and tipo != "custo_menor_melhor": return "Saudável"
-        elif percent_value == float('inf') and tipo == "custo_menor_melhor": return "Ruim"
-        elif percent_value == float('-inf'): return "Ruim"
-        return status_texto
+        if percent_value == float('inf') and tipo != "custo_menor_melhor": return "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+        elif percent_value == float('inf') and tipo == "custo_menor_melhor": return "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
+        elif percent_value == float('-inf'): return "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
+        return status_texto, cor_de_fundo_css
 
     if tipo == "maior_melhor":
-        if percent_value >= regra_status_config.get("bom_acima", 100): status_texto = "Saudável"
-        elif percent_value > regra_status_config.get("ruim_ate", 80): status_texto = "Atenção"
-        else: status_texto = "Ruim"
+        if percent_value >= regra_status_config.get("bom_acima", 100): status_texto, cor_de_fundo_css = "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+        elif percent_value > regra_status_config.get("ruim_ate", 80): status_texto, cor_de_fundo_css = "Atenção", f'background-color: {CORES_STATUS_TEXTO["Atenção"]}'
+        else: status_texto, cor_de_fundo_css = "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
     elif tipo == "custo_menor_melhor":
-        if percent_value >= 100: status_texto = "Saudável"
-        elif percent_value >= 90: status_texto = "Atenção"
-        else: status_texto = "Ruim"
+        if percent_value >= 100: status_texto, cor_de_fundo_css = "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+        elif percent_value >= 90: status_texto, cor_de_fundo_css = "Atenção", f'background-color: {CORES_STATUS_TEXTO["Atenção"]}'
+        else: status_texto, cor_de_fundo_css = "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
     elif tipo in ["dentro_faixa_invest", "dentro_faixa_percentual"]:
         bom_min, bom_max = regra_status_config.get("bom_entre", (95, 105))
         atc_inf_min, atc_inf_max = regra_status_config.get("atc_entre_inf", (85, bom_min - 0.01))
         atc_sup_min, atc_sup_max = regra_status_config.get("atc_entre_sup", (bom_max + 0.01, 115))
-        if bom_min <= percent_value <= bom_max: status_texto = "Saudável"
-        elif (atc_inf_min <= percent_value <= atc_inf_max) or (atc_sup_min <= percent_value <= atc_sup_max): status_texto = "Atenção"
-        else: status_texto = "Ruim"
-    return status_texto
+        if bom_min <= percent_value <= bom_max: status_texto, cor_de_fundo_css = "Saudável", f'background-color: {CORES_STATUS_TEXTO["Saudável"]}'
+        elif (atc_inf_min <= percent_value <= atc_inf_max) or (atc_sup_min <= percent_value <= atc_sup_max): status_texto, cor_de_fundo_css = "Atenção", f'background-color: {CORES_STATUS_TEXTO["Atenção"]}'
+        else: status_texto, cor_de_fundo_css = "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
+    return status_texto, cor_de_fundo_css
 
 for metrica_col in df_tabela_performance.columns:
     regra_cfg = metricas_config[metrica_col].get("regra_status", {})
@@ -943,14 +1002,14 @@ for metrica_col in df_tabela_performance.columns:
 
     if tipo_regra == 'valor_absoluto':
         real_val = df_tabela_performance.loc["Realizado", metrica_col]
-        status_txt = get_status_by_value(metrica_col, real_val, regra_cfg)
+        status_txt, _ = get_status_by_value(metrica_col, real_val, regra_cfg)
     else:
         percent_val = df_tabela_performance.loc["% Atingido", metrica_col]
-        status_txt = get_status_by_percent(percent_val, regra_cfg)
+        status_txt, _ = get_status_by_percent(percent_val, regra_cfg)
 
     df_tabela_performance.loc["Status", metrica_col] = status_txt
 
-# --- SEÇÃO DE KPIs ATUALIZADA E RESPONSIVA ---
+# --- SEÇÃO DE KPIs ATUALIZADA E RESPONSIVA (TODOS COMO CARDS) ---
 st.markdown("<h2 style='text-align: center;'>Performance Geral do Projeto</h2>", unsafe_allow_html=True)
 
 kpi_order = [
@@ -959,19 +1018,18 @@ kpi_order = [
     "Taxa de MQL", "Growth Rate", "MQL", "CPMQL"
 ]
 
-# Inicia o container responsivo
-st.markdown('<div class="kpi-grid-container">', unsafe_allow_html=True)
-
+kpi_cards_html = []
 for metrica in kpi_order:
     if metrica not in df_tabela_performance.columns:
-        st.markdown(f"""
+        card_html = f"""
         <div class="performance-kpi-card metric-card-na">
             <div class="kpi-header">
                 <span class="kpi-metric-name">{metrica}</span>
             </div>
             <div>Dados Indisponíveis</div>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        kpi_cards_html.append(card_html)
         continue
 
     realizado = df_tabela_performance.loc["Realizado", metrica]
@@ -1005,7 +1063,7 @@ for metrica in kpi_order:
         help_text = "descrição"
 
     # Construção do HTML do Card
-    kpi_html = f"""
+    card_html = f"""
     <div class="performance-kpi-card metric-card-{status_class if status_class else 'na'}">
         <div>
             <div class="kpi-header">
@@ -1023,10 +1081,12 @@ for metrica in kpi_order:
         </div>
     </div>
     """
-    st.markdown(kpi_html, unsafe_allow_html=True)
+    kpi_cards_html.append(card_html)
 
-# Fecha o container
-st.markdown('</div>', unsafe_allow_html=True)
+# Renderiza a grade de KPIs de uma só vez
+html_grid = f'<div class="kpi-grid-container">{"".join(kpi_cards_html)}</div>'
+st.markdown(html_grid, unsafe_allow_html=True)
+
 
 st.markdown(HR_SEPARATOR_STYLE, unsafe_allow_html=True)
 
@@ -1111,6 +1171,7 @@ if not df_pl_filtrado_intervalo.empty and "utm_source_pl" in df_pl_filtrado_inte
         df_source_chart['utm_source_pl'].apply(lambda x: 'Nulo' if pd.isna(x) or str(x).lower() in ['nan', '<na>'] else 'Não identificado')
     )
 
+    # Calcular contagens e valores para o hover
     source_agg = df_source_chart.groupby('source_mapped').agg(
         Leads=('source_mapped', 'size'),
         MQLs=('qualificacao_pl', lambda x: (x == 'MQL').sum()),
@@ -1119,12 +1180,16 @@ if not df_pl_filtrado_intervalo.empty and "utm_source_pl" in df_pl_filtrado_inte
     ).reset_index()
     source_agg['perc_mql'] = (source_agg['MQLs'] / source_agg['Leads'] * 100).fillna(0)
 
+    # Calcular porcentagem para o tamanho da barra
     source_counts = df_source_chart['source_mapped'].value_counts(normalize=True).reset_index()
     source_counts.columns = ['source_mapped', 'percentage']
     source_counts['percentage'] *= 100
 
+    # Juntar os dados de contagem com os de porcentagem
     source_counts = pd.merge(source_counts, source_agg, on='source_mapped', how='left')
 
+    # --- AJUSTE APLICADO ---
+    # Adiciona categorias faltantes de uma vez para evitar `FutureWarning` e melhorar performance.
     missing_cats = [cat for cat in category_order if cat not in source_counts['source_mapped'].unique()]
     if missing_cats:
         new_rows_data = [
@@ -1135,6 +1200,7 @@ if not df_pl_filtrado_intervalo.empty and "utm_source_pl" in df_pl_filtrado_inte
         source_counts = pd.concat([source_counts, new_rows_df], ignore_index=True)
 
 
+    # Preparar colunas formatadas para o hover
     source_counts['Faturamento_fmt'] = source_counts['Faturamento'].apply(lambda x: format_brazilian(x, "R$ {:,.2f}"))
     source_counts['perc_mql_fmt'] = source_counts['perc_mql'].apply(lambda x: f"{format_brazilian(x, '{:,.1f}')}%")
     source_counts['dummy_y'] = 'Fontes de Tráfego'
@@ -1156,7 +1222,7 @@ if not df_pl_filtrado_intervalo.empty and "utm_source_pl" in df_pl_filtrado_inte
 
     fig_source.update_layout(
         title_text='Fontes de Tráfego',
-        title_x=0.44,
+        title_x=0.44, # Centraliza o título
         xaxis_title="",
         yaxis_title="",
         legend_title_text='',
@@ -1170,7 +1236,7 @@ if not df_pl_filtrado_intervalo.empty and "utm_source_pl" in df_pl_filtrado_inte
             showticklabels=True,
             dtick=5,
             ticksuffix='%',
-            range=[0, 100]
+            range=[0, 100] # AJUSTE: Eixo fixado de 0 a 100
         ),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         legend=dict(orientation="h", yanchor="bottom", y=-0.7, xanchor="center", x=0.5),
@@ -1205,6 +1271,7 @@ st.markdown(HR_SEPARATOR_STYLE, unsafe_allow_html=True)
 # --- SEÇÃO GOOGLE ADS / PALAVRAS-CHAVE REFEITA COM ABAS ---
 st.markdown("<h2 style='text-align: center;'>Google ADS</h2>", unsafe_allow_html=True)
 
+# KPIs para a seção (baseado nos dados de 'tabela_gads' pré-calculada)
 if not tabela_gads.empty:
     kpis_gads_data = {}
     investido_gads_total = tabela_gads['Investido'].sum()
@@ -1243,6 +1310,7 @@ tab_gads, tab_kw = st.tabs(["Google Ads", "Palavras-chave"])
 with tab_gads:
     if not tabela_gads.empty:
         tabela_gads_display = tabela_gads.copy()
+        # Formatação para exibição
         format_cols_currency = ['Investido', 'CPL', 'CPMQL', 'Valor']
         format_cols_percent = ['CTR', 'Taxa de conversão', '% MQL']
         for col in format_cols_currency:
@@ -1255,6 +1323,8 @@ with tab_gads:
     else:
         st.info("Dados do Google Ads não disponíveis para o período.")
 
+# --- COLE ESTE BLOCO DE CÓDIGO DENTRO DE "with tab_kw:" ---
+
 with tab_kw:
     if not df_google_kw_bq.empty:
         df_kw_agg = df_google_kw_bq.groupby('keyword_text_gkw').agg(
@@ -1263,15 +1333,26 @@ with tab_kw:
             Cliques=('clicks_gkw', 'sum')
         ).reset_index()
 
+        # --- AJUSTE (INÍCIO) ---
+        # 1. Cria uma coluna de junção temporária com o texto da palavra-chave em minúsculo.
         df_kw_agg['join_key'] = df_kw_agg['keyword_text_gkw'].str.lower()
-        
+        # --- AJUSTE (FIM) ---
+
         if not df_pl_processed_kw.empty:
+            # --- AJUSTE (INÍCIO) ---
+            # 2. Cria a mesma coluna de junção na tabela de leads, usando o utm_term.
             df_pl_processed_kw['join_key'] = df_pl_processed_kw['utm_term_pl'].str.lower()
+
+            # 3. Realiza o merge usando a nova chave ('join_key'), que é case-insensitive.
             tabela_kw = pd.merge(df_kw_agg, df_pl_processed_kw, on='join_key', how='left')
+
+            # 4. Remove a coluna temporária após a junção para manter a tabela limpa.
             tabela_kw.drop(columns=['join_key'], inplace=True, errors='ignore')
+            # --- AJUSTE (FIM) ---
         else:
             tabela_kw = df_kw_agg.copy()
 
+        # --- AJUSTE APLICADO (Anti-FutureWarning: fillna) ---
         numeric_cols_to_fill_kw = ['Leads', 'MQL', 'Vendas', 'Valor']
         for col in numeric_cols_to_fill_kw:
             if col not in tabela_kw.columns:
@@ -1283,9 +1364,12 @@ with tab_kw:
         tabela_kw['% MQL'] = (tabela_kw['MQL'] / tabela_kw['Leads'] * 100).fillna(0)
         tabela_kw['CPL'] = (tabela_kw['Investido'] / tabela_kw['Leads']).fillna(0)
         tabela_kw['CPMQL'] = (tabela_kw['Investido'] / tabela_kw['MQL']).fillna(0)
+
+        # --- AJUSTE APLICADO (Anti-FutureWarning: replace) ---
         tabela_kw.replace([np.inf, -np.inf], 0.0, inplace=True)
         tabela_kw.rename(columns={'keyword_text_gkw': 'Palavra-chave'}, inplace=True)
 
+        # Formatação para exibição
         tabela_kw_display = tabela_kw.copy()
         format_cols_currency = ['Investido', 'CPL', 'CPMQL', 'Valor']
         format_cols_percent = ['CTR', 'Taxa de conversão', '% MQL']
@@ -1305,6 +1389,7 @@ st.markdown(HR_SEPARATOR_STYLE, unsafe_allow_html=True)
 st.markdown("<h2 style='text-align: center;'>Meta ADS</h2>", unsafe_allow_html=True)
 
 if not df_fb_creatives_final.empty:
+    # Agrega por campanha para KPIs corretos
     df_meta_ads_agg_kpi = df_fb_creatives_final.groupby('Campanha').agg(
         Impressões=('Impressões', 'sum'), Cliques=('Cliques', 'sum'), Leads=('Leads', 'sum'),
         MQL=('MQL', 'sum'), Investido=('Investido', 'sum'), Vendas=('Vendas', 'sum'),
@@ -1347,6 +1432,7 @@ tab_meta, tab_crtv = st.tabs(["Meta Ads", "Criativos"])
 
 with tab_meta:
     if not df_fb_creatives_final.empty:
+        # Reutiliza o agregado para a tabela
         df_meta_ads = df_fb_creatives_final.groupby('Campanha').agg(
             Impressões=('Impressões', 'sum'), Cliques=('Cliques', 'sum'), Leads=('Leads', 'sum'),
             MQL=('MQL', 'sum'), Investido=('Investido', 'sum'), Vendas=('Vendas', 'sum'), Valor=('Valor', 'sum'),
@@ -1357,8 +1443,10 @@ with tab_meta:
         df_meta_ads['% MQL'] = (df_meta_ads['MQL'] / df_meta_ads['Leads'] * 100).fillna(0)
         df_meta_ads['CPL'] = (df_meta_ads['Investido'] / df_meta_ads['Leads']).fillna(0)
         df_meta_ads['CPMQL'] = (df_meta_ads['Investido'] / df_meta_ads['MQL']).fillna(0)
+        # --- AJUSTE APLICADO (Anti-FutureWarning: replace) ---
         df_meta_ads.replace([np.inf, -np.inf], 0.0, inplace=True)
 
+        # Formatação para exibição
         df_meta_ads_display = df_meta_ads.copy()
         format_cols_currency = ['Investido', 'CPL', 'CPMQL', 'Valor']
         format_cols_percent = ['CTR', 'Taxa de conversão', '% MQL']
@@ -1374,6 +1462,7 @@ with tab_meta:
 
 with tab_crtv:
     if not df_fb_creatives_final.empty:
+        # Formatação para exibição
         df_fb_creatives_display = df_fb_creatives_final.copy()
         format_cols_currency = ['Investido', 'CPL', 'CPMQL', 'Valor']
         format_cols_percent = ['CTR', 'Taxa de conversão', '% MQL']
