@@ -1528,4 +1528,3 @@ if conferidor_mode:
     display_conferidor_table(df_gads_bq, "Google Ads (BQ)", 'project_id_gads')
     display_conferidor_table(df_fb_ads_bq, "Facebook Ads (BQ)", 'project_id_fb')
     st.markdown("---")
-}
