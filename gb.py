@@ -255,7 +255,7 @@ def render_persistent_sidebar():
     start_date = st.sidebar.date_input("Data Inicial", key="start_date")
     end_date = st.sidebar.date_input("Data Final", key="end_date")
     conferidor_mode = st.sidebar.toggle("Conferidor", key="conferidor_mode")
-    if start_date > end_date:
+    if start_date > end_date and end_date is not None: # Adicionado check de None
         st.sidebar.error("A 'Data Inicial' não pode ser posterior à 'Data Final'.")
         st.stop()
     project_id = client_map_dict.get(selected_client)
@@ -265,7 +265,6 @@ def render_persistent_sidebar():
 st.set_page_config(layout="wide", page_title="Growth Board")
 
 # --- CSS ATUALIZADO ---
-# <--- MUDANÇA: O CSS para .kpi-grid-container foi removido.
 st.markdown("""
 <style>
     .main .block-container { background-color: #141414; }
@@ -282,7 +281,7 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        margin-bottom: 16px; /* Espaçamento vertical quando as colunas empilham */
+        margin-bottom: 16px; 
     }
     .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: 5px; }
     .kpi-metric-name { font-size: 1.1em; font-weight: bold; color: #FFFFFF; }
@@ -352,6 +351,12 @@ selected_client, selected_project_id, data_selecionada_inicio, data_selecionada_
 # --- VALIDAÇÃO PÓS-SIDEBAR ---
 if not selected_project_id:
     st.error("Por favor, selecione um cliente para carregar os dados.")
+    st.stop()
+
+# <--- CORREÇÃO: Adicionado bloco de validação para as datas
+# Este bloco impede a execução do resto do script se uma das datas não for selecionada, evitando o TypeError.
+if not data_selecionada_inicio or not data_selecionada_fim:
+    st.warning("Por favor, selecione um período de data válido (início e fim) para continuar.")
     st.stop()
 
 # --- CARREGAMENTO DE DADOS DO BIGQUERY (COM BASE NOS FILTROS) ---
@@ -605,7 +610,9 @@ def get_status_by_percent(percent_value, regra_status_config):
         else: status_texto, cor_de_fundo_css = "Ruim", f'background-color: {CORES_STATUS_TEXTO["Ruim"]}'
     return status_texto, cor_de_fundo_css
 for metrica_col in df_tabela_performance.columns:
-    regra_cfg, tipo_regra, status_txt = metricas_config[metrica_col].get("regra_status", {}), regra_cfg.get("tipo"), "N/A"
+    regra_cfg = metricas_config[metrica_col].get("regra_status", {})
+    tipo_regra = regra_cfg.get("tipo")
+    status_txt = "N/A"
     if tipo_regra == 'valor_absoluto':
         real_val = df_tabela_performance.loc["Realizado", metrica_col]
         status_txt, _ = get_status_by_value(metrica_col, real_val, regra_cfg)
@@ -618,10 +625,8 @@ for metrica_col in df_tabela_performance.columns:
 st.markdown("<h2 style='text-align: center;'>Performance Geral do Projeto</h2>", unsafe_allow_html=True)
 kpi_order = ["Investimento", "Faturamento", "ROAS", "ROI", "Vendas", "Ticket Médio", "Leads", "CPL", "Taxa de MQL", "Growth Rate", "MQL", "CPMQL"]
 
-# <--- MUDANÇA: Usando st.columns para layout responsivo nativo
 cols = st.columns(4)
 for i, metrica in enumerate(kpi_order):
-    # Distribui os cards nas colunas
     with cols[i % 4]:
         if metrica not in df_tabela_performance.columns:
             st.markdown(f"""
