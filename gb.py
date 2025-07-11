@@ -550,13 +550,10 @@ with title_col:
     if selected_client: st.markdown(f"<h1 style='text-align: left; margin-left: 20px;'>{selected_client}</h1>", unsafe_allow_html=True)
     else: st.markdown("<h1 style='text-align: left; margin-left: 20px;'>Dashboard</h1>", unsafe_allow_html=True)
 with btn_col1:
-    st.write(""), st.write("")
     if st.button("Check-in", key="btn1"): trigger_webhook(WEBHOOK_CHECKIN, payload_data_checkin, "Check-in", "Concluído!")
 with btn_col2:
-    st.write(""), st.write("")
     if st.button("Relatório", key="btn2"): trigger_webhook(WEBHOOK_RELATORIO, payload_data_checkin, "Relatório", "Concluído!")
 with btn_col3:
-    st.write(""), st.write("")
     if st.button("Hipóteses", key="btn3"): trigger_webhook(WEBHOOK_HIPOTESES, payload_data_checkin, "Hipóteses", "Concluído!")
 if st.session_state.get("show_success_dialog", False):
     dialog_title = st.session_state.get("success_title", "Concluído!")
